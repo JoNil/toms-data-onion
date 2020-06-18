@@ -2,9 +2,9 @@
 # It is not intended for manual editing.
 [[package]]
 name = "ascii85"
-version = "0.1.1"
+version = "0.2.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8b2330915dde1c6b13251602eb5aa70ce5449c3ab5220641b2c5fe9ecc4a9db6"
+checksum = "1f7b2cc50ccfca05cc3e99a014901ae232948108082a2eecebc3ab6544ebd938"
 
 [[package]]
 name = "toms-data-onion"
