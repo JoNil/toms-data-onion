@@ -110,7 +110,9 @@ dependencies = [
  "aes",
  "ascii85",
  "block-modes",
+ "byteorder",
  "etherparse",
+ "generic-array",
 ]
 
 [[package]]

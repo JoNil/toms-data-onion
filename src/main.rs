@@ -4,6 +4,8 @@ use block_modes::{BlockMode, Cbc};
 use block_modes::block_padding::Pkcs7;
 use aes::Aes256;
 
+mod aes_kw;
+
 type Aes256Cbc = Cbc<Aes256, Pkcs7>;
 
 fn get_payload(input: &str) -> Result<&str, Box<dyn Error>> {
@@ -180,7 +182,6 @@ fn step_6() -> Result<(), Box<dyn Error>> {
     let decoded = ascii85::decode(payload)?;
 
     let kek = &decoded[0..32];
-    //let kek_key = openssl::aes::AesKey::new_decrypt(&kek)?;
 
     let kek_iv = &decoded[32..40];
 
@@ -189,13 +190,7 @@ fn step_6() -> Result<(), Box<dyn Error>> {
 
     let ciphertext = &decoded[96..];
 
-    let mut key = [40; 0];
-
-    /*openssl::aes::unwrap_key(
-        &kek_key,
-        Some(kek_iv.try_into().unwrap()),
-        &mut key,
-        &encrypted_key)?;*/
+    let key = aes_kw::unwrap(kek, kek_iv, encrypted_key)?;
 
     let cipher = Aes256Cbc::new_var(&key, &iv).unwrap();
 
