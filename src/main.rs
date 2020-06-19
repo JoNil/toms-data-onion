@@ -1,4 +1,5 @@
-use std::{error::Error, fs};
+use etherparse::{Ipv4Header, Ipv4HeaderSlice, SerializedSize, UdpHeader, UdpHeaderSlice};
+use std::{error::Error, fs, net::Ipv4Addr};
 
 fn get_payload(input: &str) -> Result<&str, Box<dyn Error>> {
     Ok(input
@@ -120,11 +121,58 @@ fn step_4() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn step_5() -> Result<(), Box<dyn Error>> {
+    let input = fs::read_to_string("step_5.txt")?;
+
+    let payload = get_payload(&input)?;
+
+    let decoded = ascii85::decode(payload)?;
+
+    let mut offset = 0;
+    let mut result = Vec::new();
+
+    while decoded.len() - offset > 28 {
+        let ip =
+            Ipv4HeaderSlice::from_slice(&decoded[offset..(offset + Ipv4Header::SERIALIZED_SIZE)])?;
+
+        let udp = UdpHeaderSlice::from_slice(
+            &decoded[(offset + Ipv4Header::SERIALIZED_SIZE)
+                ..(offset + Ipv4Header::SERIALIZED_SIZE + UdpHeader::SERIALIZED_SIZE)],
+        )?;
+
+        let ip_header = ip.to_header();
+        let udp_header = udp.to_header();
+
+        let ip_checksum = ip.header_checksum();
+        let udp_checksum = udp.checksum();
+
+        let payload = &decoded[
+            (offset + Ipv4Header::SERIALIZED_SIZE + ip.options().len() + 8)..(offset + Ipv4Header::SERIALIZED_SIZE + ip.options().len() + udp.length() as usize)
+        ];
+
+        if ip.source_addr() == Ipv4Addr::new(10, 1, 1, 10)
+            && ip.destination_addr() == Ipv4Addr::new(10, 1, 1, 200)
+            && udp.destination_port() == 42069
+            && ip_checksum == ip_header.calc_header_checksum()?
+            && udp_checksum == udp_header.calc_checksum_ipv4(&ip_header, payload)?
+        {
+            result.extend_from_slice(payload);
+        }
+
+        offset += Ipv4Header::SERIALIZED_SIZE + ip.options().len() + udp.length() as usize;
+    }
+
+    fs::write("step_6.txt", String::from_utf8_lossy(&result).as_bytes())?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     step_1()?;
     step_2()?;
     step_3()?;
     step_4()?;
+    step_5()?;
 
     Ok(())
 }

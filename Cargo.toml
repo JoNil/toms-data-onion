@@ -8,3 +8,4 @@ edition = "2018"
 
 [dependencies]
 ascii85 = "0.2"
+etherparse = "0.9"
