@@ -1,5 +1,10 @@
 use etherparse::{Ipv4Header, Ipv4HeaderSlice, SerializedSize, UdpHeader, UdpHeaderSlice};
 use std::{error::Error, fs, net::Ipv4Addr};
+use block_modes::{BlockMode, Cbc};
+use block_modes::block_padding::Pkcs7;
+use aes::Aes256;
+
+type Aes256Cbc = Cbc<Aes256, Pkcs7>;
 
 fn get_payload(input: &str) -> Result<&str, Box<dyn Error>> {
     Ok(input
@@ -167,12 +172,47 @@ fn step_5() -> Result<(), Box<dyn Error>> {
     Ok(())
 }
 
+fn step_6() -> Result<(), Box<dyn Error>> {
+    let input = fs::read_to_string("step_6.txt")?;
+
+    let payload = get_payload(&input)?;
+
+    let decoded = ascii85::decode(payload)?;
+
+    let kek = &decoded[0..32];
+    //let kek_key = openssl::aes::AesKey::new_decrypt(&kek)?;
+
+    let kek_iv = &decoded[32..40];
+
+    let encrypted_key = &decoded[40..80];
+    let iv = &decoded[80..96];
+
+    let ciphertext = &decoded[96..];
+
+    let mut key = [40; 0];
+
+    /*openssl::aes::unwrap_key(
+        &kek_key,
+        Some(kek_iv.try_into().unwrap()),
+        &mut key,
+        &encrypted_key)?;*/
+
+    let cipher = Aes256Cbc::new_var(&key, &iv).unwrap();
+
+    let decrypted_ciphertext = cipher.decrypt_vec(&ciphertext).unwrap();
+
+    fs::write("step_7.txt", String::from_utf8_lossy(&decrypted_ciphertext).as_bytes())?;
+
+    Ok(())
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     step_1()?;
     step_2()?;
     step_3()?;
     step_4()?;
     step_5()?;
+    step_6()?;
 
     Ok(())
 }
